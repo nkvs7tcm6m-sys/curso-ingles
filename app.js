@@ -1,20 +1,27 @@
 
 var AUD=null;fetch(window.ROOT+'audio/index.json').then(function(r){return r.json()}).then(function(j){AUD=j}).catch(function(){});
 
-function LS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));if(window.onLSChange&&k!=='ck')window.onLSChange(k)}catch(e){return null}}
+function LS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));if(window.onLSChange&&k!=='ck')window.onLSChange(k);if(k==='tests'||k==='done'||k==='ex'||k==='rk'||k==='corr')setTimeout(function(){if(window.checkLogros)checkLogros()},0)}catch(e){return null}}
 function ckSet(v){LS('ck',v);document.getElementById('ck').style.display='none';loadAds()}
 function loadAds(){if(LS('ck')==='yes'&&window.ADSENSE&&!window.__ads){window.__ads=1;var s=document.createElement('script');s.async=1;s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+window.ADSENSE;s.crossOrigin='anonymous';document.head.appendChild(s);document.querySelectorAll('[data-ad]').forEach(function(d){d.innerHTML='<ins class="adsbygoogle" style="display:block" data-ad-client="'+window.ADSENSE+'" data-ad-format="auto" data-full-width-responsive="true"></ins>';(window.adsbygoogle=window.adsbygoogle||[]).push({})})}}
-if(!LS('ck'))document.getElementById('ck').style.display='block';loadAds();
+if(!LS('ck'))document.getElementById('ck').style.display='block';loadAds();try{if('serviceWorker' in navigator)navigator.serviceWorker.register(window.ROOT+'sw.js')}catch(e){}
 function done(){return LS('done')||{}}
 function today(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 function yest(){var d=new Date(Date.now()-864e5);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 function rk(){var r=LS('rk')||{last:'',n:0,hoy:0};if(r.last!==today()){if(r.last&&r.last!==yest())r.n=0;r.hoy=0}return r}
 function bump(){var r=rk(),t=today();if(r.last!==t){r.n=(r.last===yest()?r.n:0)+1;r.last=t;r.hoy=0}r.hoy++;LS('rk',r);showRk();if(r.hoy===3)toast('🎯 ¡Meta del día cumplida! Racha: '+r.n+' día'+(r.n>1?'s':''))}
-function showRk(){var e=document.getElementById('rk');if(!e)return;var r=rk();e.innerHTML='🔥 Racha: <b>'+r.n+'</b> · Hoy: <b>'+Math.min(r.hoy,3)+'/3</b> tests'}
+function showRk(){var e=document.getElementById('rk');if(!e)return;var r=rk(),d=dueErrs().length;e.innerHTML='🔥 Racha: <b>'+r.n+'</b> · Hoy: <b>'+Math.min(r.hoy,3)+'/3</b> tests'+(d?' · <a href="'+window.ROOT+'errores.html" style="text-decoration:none">🔁 '+d+' por repasar</a>':'')}
 function errs(){return LS('err')||[]}
 function qk(q){return q.p+'|'+q.say+'|'+q.o.join('/')}
-function addErr(q){var a=errs().filter(function(x){return qk(x)!==qk(q)});a.unshift(q);LS('err',a.slice(0,80))}
-function delErr(q){LS('err',errs().filter(function(x){return qk(x)!==qk(q)}))}
+var INT=[1,3,7,14];
+function addErr(q){var a=errs().filter(function(x){return qk(x)!==qk(q)});q.box=0;q.due=Date.now()+864e5;a.unshift(q);LS('err',a.slice(0,80))}
+function promote(q){var a=errs(),i=-1;a.forEach(function(x,k){if(qk(x)===qk(q))i=k});if(i<0)return;var e=a[i];if((e.due||0)>Date.now())return;e.box=(e.box||0)+1;if(e.box>=INT.length){a.splice(i,1);LS('corr',(LS('corr')||0)+1)}else{e.due=Date.now()+INT[e.box]*864e5}LS('err',a)}
+function dueErrs(){var n=Date.now();return errs().filter(function(x){return(x.due||0)<=n})}
+function delErr(q){promote(q)}
+
+var LOGROS=[['t1','🌱','Primer paso','Completa tu primer test',function(s){return s.tests>=1}],['t10','🔟','Calentando','10 tests completados',function(s){return s.tests>=10}],['t50','💪','Constante','50 tests completados',function(s){return s.tests>=50}],['t100','🚀','Imparable','100 tests completados',function(s){return s.tests>=100}],['t250','🏆','Leyenda','250 tests completados',function(s){return s.tests>=250}],['r3','🔥','Racha de 3','3 días seguidos',function(s){return s.racha>=3}],['r7','🔥','Semana perfecta','7 días seguidos',function(s){return s.racha>=7}],['r14','⚡','Dos semanas','14 días seguidos',function(s){return s.racha>=14}],['r30','👑','Un mes entero','30 días seguidos',function(s){return s.racha>=30}],['l1','📘','Primera lección','1 lección completada',function(s){return s.lecc>=1}],['l5','📚','Cinco lecciones','5 lecciones completadas',function(s){return s.lecc>=5}],['l10','🎓','Diez lecciones','10 lecciones completadas',function(s){return s.lecc>=10}],['l25','🌟','Media carrera','25 lecciones completadas',function(s){return s.lecc>=25}],['l50','🏅','Curso completo','50 lecciones completadas',function(s){return s.lecc>=50}],['e1','📝','Examen aprobado','Aprueba un examen (70%)',function(s){return s.exam>=1}],['e5','🥇','Cinco exámenes','Aprueba 5 exámenes',function(s){return s.exam>=5}],['c10','🧠','Aprendiendo de los errores','Corrige 10 errores en el repaso',function(s){return s.corr>=10}]];
+function stats(){var r=rk(),t=LS('tests')||{},n=0,k;for(k in t)n+=t[k];var ex=LS('ex')||{},ap=0;for(k in ex)if(ex[k]>=70)ap++;return{racha:r.n,tests:n,lecc:Object.keys(done()).length,exam:ap,corr:LS('corr')||0}}
+function checkLogros(){var s=stats(),u=LS('logros')||{},nu=[];LOGROS.forEach(function(l){if(!u[l[0]]&&l[4](s)){u[l[0]]=today();nu.push(l)}});if(nu.length){LS('logros',u);toast('🏅 ¡Logro desbloqueado: '+nu[0][2]+'! '+nu[0][1])}}
 document.addEventListener('DOMContentLoaded',function(){showRk();var c=document.getElementById('cont'),l=LS('last');if(c&&l)c.innerHTML='<a class="btn" href="'+window.ROOT+'leccion/'+('0'+l).slice(-2)+'.html">▶ Continuar donde lo dejaste (lección '+(l>20?l-20:l)+')</a>'});
 function markDone(id){var d=done();d[id]=1;LS('done',d)}
 function speak(t,l){try{if(window.CANSPEAK&&!window.CANSPEAK()){toast('🔇 Hay un vídeo sonando. El audio del test se activa al pausar o silenciar el vídeo.');return}if(AUD&&AUD[t]){if(window.__a)window.__a.pause();window.__a=new Audio(window.ROOT+'audio/'+AUD[t]);window.__a.playbackRate=LS('slow')?0.75:1;var pr=window.__a.play();if(pr&&pr.catch)pr.catch(function(){toast('🔊 Pulsa el botón Escuchar para oír el audio.')});return}}catch(e){}}
