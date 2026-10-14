@@ -9,7 +9,7 @@ window.shareRk=function(){var r=rk(),t='🔥 Llevo '+r.n+' día(s) de racha apre
 window.CANSPEAK=function(){var p=window.YTP||player;if(!p||!p.getPlayerState)return true;try{var s=p.getPlayerState();return !((s===1||s===3)&&!p.isMuted())}catch(e){return true}};
 setInterval(function(){if(!window.CANSPEAK()&&window.__a&&!window.__a.paused)window.__a.pause()},300);
 function startTest(){var el=document.getElementById('q');var i=cnt()%tests.length;runQuiz(el,tests[i],{noRetry:1,onAns:function(q,ok){if(ok){promote(q)}else{addErr(Object.assign({les:LES},q))}},onEnd:function(p){bump();setCnt(cnt()+1);var d=document.createElement('p');d.innerHTML='<button class="btn" id="nx">Siguiente test →</button> <small>Otro test distinto, sin parar el vídeo.</small>'+(errs().length?' <a class="btn sec" href="../errores.html">🔁 Repasar mis errores ('+errs().length+')</a>':'');el.appendChild(d);document.getElementById('nx').onclick=startTest}})}
-fetch('../datos/leccion-'+('0'+LES).slice(-2)+'.json').then(function(r){return r.json()}).then(function(j){tests=j;showCnt();startTest()});
+fetch('../datos/leccion-'+(LES<10?'0'+LES:LES)+'.json').then(function(r){return r.json()}).then(function(j){tests=j;showCnt();startTest()});
 showCnt();gate();
 if(VIDID){var s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s);
 window.onYouTubeIframeAPIReady=function(){player=window.YTPREAL=new YT.Player('yt',{videoId:VIDID,playerVars:{rel:0,playsinline:1,modestbranding:1},events:{onStateChange:function(e){if(e.data===1){if(first){first=false;try{player.unMute();player.setVolume(100)}catch(x){}}if(window.__a)window.__a.pause()}}}})}}
